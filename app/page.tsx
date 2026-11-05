@@ -1,124 +1,166 @@
-import { PrismaClient } from "@prisma/client";
-import { updateAssignmentStatus } from "./actions";
 import Link from "next/link";
+import { prisma } from "../lib/prisma";
 
-const prisma = new PrismaClient();
+type ServiceWithAssignments = {
+  id: string | number;
+  title: string | null;
+  date: Date | string | null;
+  status: string | null;
+  assignments: Array<{
+    person: {
+      id: string | number;
+      name?: string | null;
+      email?: string | null;
+      [key: string]: unknown;
+    } | null;
+    [key: string]: unknown;
+  }>;
+};
 
-export default async function Home() {
-  const events = await prisma.event.findMany({
-    where: {
-      eventDate: { gte: new Date() },
-    },
-    include: {
-      assignments: {
-        include: {
-          user: true,
-          role: {
-            include: { team: true },
+// Helper to calculate status badge colors safely with expected arguments
+function getStatusBadge(
+  status: string | null | undefined,
+  defaultStyle: string,
+  fallbackText: string
+) {
+  if (!status) return { text: fallbackText, className: defaultStyle };
+
+  switch (status.toUpperCase()) {
+    case "CONFIRMED":
+      return { text: "Confirmed", className: "bg-green-100 text-green-800" };
+    case "PENDING":
+      return { text: "Pending", className: "bg-yellow-100 text-yellow-800" };
+    case "DECLINED":
+      return { text: "Declined", className: "bg-red-100 text-red-800" };
+    default:
+      return { text: status, className: defaultStyle };
+  }
+}
+
+export default async function HomePage() {
+  // Fetch upcoming services and team assignments from Prisma
+  let upcomingServices: ServiceWithAssignments[] = [];
+
+  try {
+    upcomingServices = await prisma.service.findMany({
+      take: 5,
+      orderBy: { date: "asc" },
+      include: {
+        assignments: {
+          include: {
+            person: true,
           },
         },
       },
-    },
-    orderBy: { eventDate: "asc" },
-    take: 5,
-  });
+    });
+  } catch (error) {
+    console.error("Failed to load services:", error);
+  }
 
   return (
-    <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8 border-b pb-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900">Church Volunteer Hub</h1>
-          <p className="text-sm text-gray-500 mt-1">Upcoming service rosters and team assignments</p>
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      {/* Navigation Header */}
+      <header className="border-b bg-white shadow-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div className="flex items-center space-x-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white">
+              CP
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900">
+              Church Planner
+            </h1>
+          </div>
+          <nav className="flex space-x-4">
+            <Link
+              href="/admin/services"
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition"
+            >
+              Manage Services
+            </Link>
+          </nav>
         </div>
-        <span className="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1.5 rounded-full">
-          Database Connected (SQLite)
-        </span>
-      </div>
+      </header>
 
-      {/* Events List */}
-      {events.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-gray-200">
-          <h2 className="text-lg font-bold text-gray-800 mb-2">No upcoming services scheduled yet</h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Click `+ New Service` above or use Prisma Studio (`npx prisma studio`) to add sample events.
+      {/* Main Content Dashboard */}
+      <main className="mx-auto max-w-7xl px-6 py-8">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+          <p className="text-sm text-gray-600">
+            Overview of upcoming services and volunteer team scheduling.
           </p>
         </div>
-      ) : (
-        <div className="space-y-6">
-          {events.map((event) => (
-            <div key={event.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <div>
-                  <Link href={`/admin/services/${event.id}`} className="hover:underline">
-                    <h2 className="text-lg font-bold text-gray-900">{event.title} ↗</h2>
-                  </Link>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Service Date: {new Date(event.eventDate).toLocaleDateString("en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
-                  </p>
-                </div>
-                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded-full">
-                  {event.assignments.length} Assigned
-                </span>
-              </div>
 
-              <div className="p-6">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Assigned Roster</h3>
-                {event.assignments.length === 0 ? (
-                  <p className="text-sm text-gray-500 italic">No volunteers assigned to this service yet.</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {event.assignments.map((assignment) => (
-                      <div key={assignment.id} className="flex flex-col justify-between p-4 bg-gray-50 rounded-lg border border-gray-100 space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-sm font-bold text-gray-900">{assignment.user.fullName}</p>
-                            <p className="text-xs text-gray-500">{assignment.role.team.name} • {assignment.role.name}</p>
-                          </div>
-                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                            assignment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                            assignment.status === 'declined' ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {assignment.status}
-                          </span>
-                        </div>
+        {/* Services Overview List */}
+        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+          <div className="border-b bg-gray-50 px-6 py-4">
+            <h3 className="font-semibold text-gray-800">Upcoming Services</h3>
+          </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex space-x-2 pt-2 border-t border-gray-200">
-                          <form action={async () => {
-                            "use server";
-                            await updateAssignmentStatus(assignment.id, "confirmed");
-                          }} className="flex-1">
-                            <button
-                              type="submit"
-                              className="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 px-3 rounded shadow-sm transition cursor-pointer"
-                            >
-                              Confirm
-                            </button>
-                          </form>
-
-                          <form action={async () => {
-                            "use server";
-                            await updateAssignmentStatus(assignment.id, "declined");
-                          }} className="flex-1">
-                            <button
-                              type="submit"
-                              className="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-semibold py-1.5 px-3 rounded shadow-sm transition cursor-pointer"
-                            >
-                              Decline
-                            </button>
-                          </form>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+          {upcomingServices.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <p className="text-base">No upcoming services scheduled.</p>
+              <Link
+                href="/admin/services"
+                className="mt-3 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-800"
+              >
+                + Create your first service
+              </Link>
             </div>
-          ))}
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {upcomingServices.map((service, index: number) => {
+                const badge = getStatusBadge(
+                  service.status ?? "PENDING",
+                  "bg-gray-100 text-gray-800",
+                  "Scheduled"
+                );
+
+                return (
+                  <div
+                    key={service.id || index}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
+                  >
+                    <div>
+                      <div className="flex items-center space-x-3">
+                        <span className="font-semibold text-lg text-gray-900">
+                          {service.title || "Sunday Worship Service"}
+                        </span>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}
+                        >
+                          {badge.text}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {service.date
+                          ? new Date(service.date).toLocaleDateString("en-US", {
+                              weekday: "long",
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "Date TBD"}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+                      <span className="text-xs text-gray-500">
+                        {service.assignments?.length || 0} Volunteers Scheduled
+                      </span>
+                      <Link
+                        href={`/admin/services/${service.id}`}
+                        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        View Plan
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
-    </main>
+      </main>
+    </div>
   );
 }
