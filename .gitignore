@@ -1,0 +1,12 @@
+node_modulesnode_modules/
+.next/
+dist/
+build/
+.env
+.env*.local
+dev.db
+dev.db-journal
+node_modules/
+.next/
+.env
+dev.db

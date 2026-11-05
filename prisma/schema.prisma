@@ -1,0 +1,81 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          String   @id @default(uuid())
+  fullName    String
+  email       String?  @unique
+  phoneNumber String?
+  isApproved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignments   ServiceAssignment[]
+  blockoutDates BlockoutDate[]
+}
+
+model Team {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles TeamRole[]
+}
+
+model TeamRole {
+  id        String   @id @default(uuid())
+  name      String
+  teamId    String
+  createdAt DateTime @default(now())
+
+  team        Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  assignments ServiceAssignment[]
+
+  @@unique([teamId, name])
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  eventDate   DateTime
+  callTime    DateTime
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignments ServiceAssignment[]
+}
+
+model ServiceAssignment {
+  id        String   @id @default(uuid())
+  eventId   String
+  userId    String
+  roleId    String
+  status    String   @default("pending") // "pending", "confirmed", or "declined"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role  TeamRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId, roleId])
+}
+
+model BlockoutDate {
+  id        String   @id @default(uuid())
+  userId    String
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
