@@ -315,3 +315,30 @@ export async function addVolunteer(formData: FormData) {
   revalidatePath("/admin/volunteers");
   redirect("/admin/volunteers?added=ok");
 }
+
+// ---------- Roles (admin) ----------
+
+export async function addRole(formData: FormData) {
+  await requireAdmin();
+  const teamId = String(formData.get("teamId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+
+  if (!teamId || !name) redirect("/admin/teams?role=missing");
+
+  try {
+    const existing = await prisma.teamRole.findMany({ where: { teamId } });
+    if (existing.some((r) => r.name.trim().toLowerCase() === name.toLowerCase())) {
+      redirect("/admin/teams?role=exists");
+    }
+    await prisma.teamRole.create({ data: { name, teamId } });
+  } catch (error) {
+    // redirect() works by throwing: let it through
+    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
+    if ((error as { digest?: string })?.digest?.startsWith("NEXT_REDIRECT")) throw error;
+    console.error("Failed to add role:", error);
+    redirect("/admin/teams?role=error");
+  }
+  revalidatePath("/admin/teams");
+  revalidatePath("/admin/services");
+  redirect("/admin/teams?role=ok");
+}
