@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { deleteEvent } from "@/app/actions";
+import ConfirmButton from "@/app/Components/ConfirmButton";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -28,17 +30,17 @@ export default async function AdminServicesPage() {
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <ul className="divide-y divide-gray-200">
           {events.map((event) => (
-            <li key={event.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+            <li key={event.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 gap-4">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">{event.title}</h2>
                 <p className="text-sm text-gray-500">
                   {new Date(event.eventDate).toLocaleDateString("en-US", {
-                    weekday: 'long',
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
+                    weekday: "long",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
                   })}
                 </p>
               </div>
@@ -52,6 +54,21 @@ export default async function AdminServicesPage() {
                 >
                   Manage Roster →
                 </Link>
+                <Link
+                  href={`/admin/services/${event.id}/edit`}
+                  className="text-gray-600 hover:text-gray-900 text-sm font-medium"
+                >
+                  Edit
+                </Link>
+                <form action={deleteEvent}>
+                  <input type="hidden" name="id" value={event.id} />
+                  <ConfirmButton
+                    message={`Delete "${event.title}"? This also removes its ${event._count.assignments} assignment(s). This can't be undone.`}
+                    className="text-red-600 hover:text-red-800 text-sm font-medium cursor-pointer"
+                  >
+                    Delete
+                  </ConfirmButton>
+                </form>
               </div>
             </li>
           ))}

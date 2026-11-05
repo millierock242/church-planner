@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { createAssignment } from "@/app/actions";
+import { createAssignment, deleteAssignment, deleteEvent } from "@/app/actions";
+import ConfirmButton from "@/app/Components/ConfirmButton";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -65,9 +66,23 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
             {new Date(event.eventDate).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
         </div>
-        <Link href={`/admin/services/${event.id}/print`} target="_blank" className="bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
-          Print / Export Roster
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href={`/admin/services/${event.id}/edit`} className="border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50">
+            Edit
+          </Link>
+          <form action={deleteEvent}>
+            <input type="hidden" name="id" value={event.id} />
+            <ConfirmButton
+              message={`Delete "${event.title}" and all its assignments? This can't be undone.`}
+              className="border border-red-200 text-red-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-red-50 cursor-pointer"
+            >
+              Delete
+            </ConfirmButton>
+          </form>
+          <Link href={`/admin/services/${event.id}/print`} target="_blank" className="bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
+            Print / Export Roster
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">
@@ -113,12 +128,24 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                 <p className="font-medium text-gray-900">{assignment.user.fullName}</p>
                 <p className="text-xs text-gray-500">{assignment.role.team.name} — {assignment.role.name}</p>
               </div>
-              <span className={`px-2 py-1 text-xs rounded-full font-semibold capitalize ${
-                assignment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                assignment.status === 'declined' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {assignment.status}
-              </span>
+              <div className="flex items-center gap-4">
+                <span className={`px-2 py-1 text-xs rounded-full font-semibold capitalize ${
+                  assignment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                  assignment.status === 'declined' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {assignment.status}
+                </span>
+                <form action={deleteAssignment}>
+                  <input type="hidden" name="id" value={assignment.id} />
+                  <input type="hidden" name="eventId" value={event.id} />
+                  <ConfirmButton
+                    message={`Remove ${assignment.user.fullName} from ${assignment.role.name}?`}
+                    className="text-red-600 hover:text-red-800 text-xs font-medium cursor-pointer"
+                  >
+                    Remove
+                  </ConfirmButton>
+                </form>
+              </div>
             </div>
           ))}
           {event.assignments.length === 0 && (

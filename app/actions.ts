@@ -37,17 +37,29 @@ export async function logoutAdmin() {
   redirect("/");
 }
 
-// Public on purpose: volunteers use this from the portal.
-export async function updateAssignmentStatus(assignmentId: string, status: string, eventId: string) {
+// Public on purpose, but a volunteer can only change an assignment that
+// belongs to the email address they looked up.
+export async function updateMyAssignmentStatus(assignmentId: string, status: string, email: string) {
   if (status !== "confirmed" && status !== "declined") {
     return { success: false, error: "Invalid status" };
   }
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return { success: false, error: "Email required" };
+
   try {
+    const assignment = await prisma.serviceAssignment.findUnique({
+      where: { id: assignmentId },
+      include: { user: true },
+    });
+    if (!assignment || assignment.user.email?.toLowerCase() !== cleanEmail) {
+      return { success: false, error: "Assignment not found" };
+    }
     await prisma.serviceAssignment.update({
       where: { id: assignmentId },
       data: { status },
     });
-    revalidatePath(`/admin/services/${eventId}`);
+    revalidatePath(`/admin/services/${assignment.eventId}`);
+    revalidatePath("/admin/roster");
     revalidatePath("/portal");
     return { success: true };
   } catch (error) {
@@ -166,4 +178,94 @@ export async function createAssignment(formData: FormData) {
     console.error("Failed to create assignment:", error);
     return { success: false, error: "Failed to create assignment" };
   }
+}
+
+// ---------- Edit & delete (admin only) ----------
+
+export async function updateEvent(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const eventDate = String(formData.get("eventDate") ?? "");
+  const description = String(formData.get("description") ?? "").trim();
+
+  if (!id || !title || !eventDate) redirect(`/admin/services/${id}/edit?error=1`);
+
+  try {
+    await prisma.event.update({
+      where: { id },
+      data: { title, eventDate: new Date(eventDate), description: description || null },
+    });
+  } catch (error) {
+    console.error("Failed to update event:", error);
+    redirect(`/admin/services/${id}/edit?error=1`);
+  }
+  revalidatePath("/admin/services");
+  revalidatePath(`/admin/services/${id}`);
+  revalidatePath("/admin/roster");
+  revalidatePath("/");
+  redirect(`/admin/services/${id}`);
+}
+
+export async function deleteEvent(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  try {
+    await prisma.event.delete({ where: { id } });
+  } catch (error) {
+    console.error("Failed to delete event:", error);
+  }
+  revalidatePath("/admin/services");
+  revalidatePath("/admin/roster");
+  revalidatePath("/");
+  redirect("/admin/services");
+}
+
+export async function updateVolunteer(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const fullName = String(formData.get("fullName") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+
+  if (!id || !fullName) redirect(`/admin/volunteers/${id}/edit?error=1`);
+
+  try {
+    await prisma.user.update({
+      where: { id },
+      data: { fullName, email: email || null },
+    });
+  } catch (error) {
+    console.error("Failed to update volunteer:", error);
+    redirect(`/admin/volunteers/${id}/edit?error=1`);
+  }
+  revalidatePath("/admin/volunteers");
+  revalidatePath("/admin/roster");
+  redirect("/admin/volunteers");
+}
+
+export async function deleteVolunteer(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  try {
+    await prisma.user.delete({ where: { id } });
+  } catch (error) {
+    console.error("Failed to delete volunteer:", error);
+  }
+  revalidatePath("/admin/volunteers");
+  revalidatePath("/admin/roster");
+  redirect("/admin/volunteers");
+}
+
+export async function deleteAssignment(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const eventId = String(formData.get("eventId") ?? "");
+  try {
+    await prisma.serviceAssignment.delete({ where: { id } });
+  } catch (error) {
+    console.error("Failed to delete assignment:", error);
+  }
+  revalidatePath(`/admin/services/${eventId}`);
+  revalidatePath("/admin/roster");
+  redirect(`/admin/services/${eventId}`);
 }
