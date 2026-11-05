@@ -1,59 +1,34 @@
-import { createVolunteer } from "@/app/actions";
+import { createUser } from "@/app/actions";
 import Link from "next/link";
 
-export default function PublicVolunteerSignupPage() {
+export default function JoinPage() {
   return (
-    <div className="max-w-xl mx-auto px-4 py-12">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <div className="text-center mb-8">
-          <span className="text-4xl">🙌</span>
-          <h1 className="text-2xl font-extrabold text-gray-900 mt-2">Join the Volunteer Team</h1>
-          <p className="text-sm text-gray-500 mt-1">Fill out your information below to serve in upcoming church services</p>
-        </div>
-
-        <form action={createVolunteer} className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="max-w-md w-full bg-white shadow rounded-lg p-8">
+        <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">Volunteer Portal</h1>
+        <p className="text-sm text-gray-500 text-center mb-6">Sign up to get added to the team roster</p>
+        <form 
+          action={async (formData) => {
+            "use server";
+            await createUser(formData);
+          }} 
+          className="space-y-4"
+        >
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Full Name</label>
-            <input 
-              type="text" 
-              name="fullName" 
-              required 
-              placeholder="e.g. John Doe"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-            />
+            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+            <input type="text" name="fullName" required className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm" />
           </div>
-
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Email Address</label>
-            <input 
-              type="email" 
-              name="email" 
-              placeholder="john@example.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-            />
+            <label className="block text-sm font-medium text-gray-700">Email Address</label>
+            <input type="email" name="email" className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm" />
           </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-1">Phone Number (SMS Notifications)</label>
-            <input 
-              type="tel" 
-              name="phone" 
-              placeholder="(242) 555-0199"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-lg shadow-sm transition cursor-pointer"
-          >
-            Submit Registration
+          <button type="submit" className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-indigo-700">
+            Register as Volunteer
           </button>
         </form>
-
-        <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-          <Link href="/portal" className="text-xs font-semibold text-indigo-600 hover:underline">
-            Already registered? View your schedule in the Volunteer Portal →
+        <div className="mt-4 text-center">
+          <Link href="/portal" className="text-xs text-indigo-600 hover:text-indigo-900">
+            Already registered? View My Assignments →
           </Link>
         </div>
       </div>

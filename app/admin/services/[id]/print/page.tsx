@@ -1,88 +1,71 @@
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+import { notFound } from "next/navigation";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default async function PrintRosterPage({ params }: PageProps) {
-  const resolvedParams = await params;
+export default async function PrintServicePage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const event = await prisma.event.findUnique({
-    where: { id: resolvedParams.id },
+    where: { id },
     include: {
       assignments: {
         include: {
           user: true,
-          role: { include: { team: true } },
+          role: {
+            include: {
+              team: true,
+            },
+          },
         },
       },
     },
   });
 
-  if (!event) return <div className="p-8 text-center">Service not found.</div>;
+  if (!event) {
+    notFound();
+  }
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12 bg-white min-h-screen text-gray-900">
-      
-      {/* Top Action Bar (Hidden when printed) */}
-      <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200 print:hidden">
-        <Link href={`/admin/services/${event.id}`} className="text-xs font-semibold text-gray-600 hover:underline">
-          ← Back to Service Management
-        </Link>
-      </div>
-
-      {/* Printable Header */}
-      <div className="text-center mb-8 border-b-2 border-gray-900 pb-6">
-        <h1 className="text-2xl font-black uppercase tracking-wider">{event.title}</h1>
-        <p className="text-sm font-semibold text-gray-600 mt-1">
-          Service Date: {new Date(event.eventDate).toLocaleDateString("en-US", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+    <div className="max-w-4xl mx-auto p-8 bg-white text-black print:p-0">
+      <div className="border-b pb-4 mb-6">
+        <h1 className="text-3xl font-bold">{event.title}</h1>
+        <p className="text-gray-600">
+          {new Date(event.eventDate).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
         </p>
+        {event.description && <p className="mt-2 text-sm">{event.description}</p>}
       </div>
 
-      {/* Roster Table */}
-      <div>
-        <h2 className="text-md font-bold uppercase tracking-wider text-gray-700 mb-4">Master Team Roster</h2>
-        <table className="min-w-full divide-y divide-gray-300 text-left border border-gray-300">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-2.5 text-xs font-bold uppercase text-gray-700 border-r border-gray-300">Team / Role</th>
-              <th className="px-4 py-2.5 text-xs font-bold uppercase text-gray-700 border-r border-gray-300">Volunteer Name</th>
-              <th className="px-4 py-2.5 text-xs font-bold uppercase text-gray-700 border-r border-gray-300">Contact</th>
-              <th className="px-4 py-2.5 text-xs font-bold uppercase text-gray-700">Status</th>
+      <h2 className="text-xl font-semibold mb-4">Service Roster</h2>
+      <table className="w-full border-collapse border border-gray-300">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-300 p-2 text-left">Team / Role</th>
+            <th className="border border-gray-300 p-2 text-left">Volunteer</th>
+            <th className="border border-gray-300 p-2 text-left">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {event.assignments.map((assignment: {
+            id: string;
+            role: { team: { name: string }; name: string };
+            user: { fullName: string };
+            status: string;
+          }) => (
+            <tr key={assignment.id}>
+              <td className="border border-gray-300 p-2">
+                <span className="font-semibold">{assignment.role.team.name}</span>: {assignment.role.name}
+              </td>
+              <td className="border border-gray-300 p-2">{assignment.user.fullName}</td>
+              <td className="border border-gray-300 p-2 capitalize">{assignment.status}</td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {event.assignments.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500 italic">
-                  No team members assigned for this service.
-                </td>
-              </tr>
-            ) : (
-              event.assignments.map((assignment) => (
-                <tr key={assignment.id}>
-                  <td className="px-4 py-3 text-xs font-bold text-gray-900 border-r border-gray-200">
-                    {assignment.role.team.name} <span className="block font-normal text-gray-500">{assignment.role.name}</span>
-                  </td>
-                  <td className="px-4 py-3 text-xs font-medium text-gray-900 border-r border-gray-200">
-                    {assignment.user.fullName}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-600 border-r border-gray-200">
-                    {assignment.user.phoneNumber || assignment.user.email || "No contact info"}
-                  </td>
-                  <td className="px-4 py-3 text-xs font-semibold capitalize text-gray-800">
-                    {assignment.status}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mt-12 pt-6 border-t border-gray-200 text-center text-xs text-gray-400">
-        Generated by Church Planning & Communication System • Roster Call Sheet
-      </div>
+          ))}
+          {event.assignments.length === 0 && (
+            <tr>
+              <td colSpan={3} className="border border-gray-300 p-4 text-center text-gray-500">
+                No assignments for this service.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
