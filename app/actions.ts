@@ -269,3 +269,49 @@ export async function deleteAssignment(formData: FormData) {
   revalidatePath("/admin/roster");
   redirect(`/admin/services/${eventId}`);
 }
+
+// ---------- Volunteer sign-up (public) and add volunteer (admin) ----------
+
+// Public sign-up form on the home page. Always creates a plain volunteer.
+export async function signUpVolunteer(formData: FormData) {
+  // Hidden "website" field: real people leave it empty, spam bots fill it in.
+  if (String(formData.get("website") ?? "")) redirect("/?signup=success#signup");
+
+  const fullName = String(formData.get("fullName") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+
+  if (!fullName || !email) redirect("/?signup=missing#signup");
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) redirect("/?signup=exists#signup");
+
+  try {
+    await prisma.user.create({
+      data: { fullName, email, role: "volunteer" },
+    });
+  } catch (error) {
+    console.error("Failed to sign up volunteer:", error);
+    redirect("/?signup=error#signup");
+  }
+  revalidatePath("/admin/volunteers");
+  redirect("/?signup=success#signup");
+}
+
+export async function addVolunteer(formData: FormData) {
+  await requireAdmin();
+  const fullName = String(formData.get("fullName") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+
+  if (!fullName) redirect("/admin/volunteers?added=missing");
+
+  try {
+    await prisma.user.create({
+      data: { fullName, email: email || null, role: "volunteer" },
+    });
+  } catch (error) {
+    console.error("Failed to add volunteer:", error);
+    redirect("/admin/volunteers?added=error");
+  }
+  revalidatePath("/admin/volunteers");
+  redirect("/admin/volunteers?added=ok");
+}
