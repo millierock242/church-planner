@@ -2,12 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getIronSession } from "iron-session";
 import { sessionOptions, SessionData } from "@/lib/session";
 
-export async function middleware(request: NextRequest) {
+// Next.js 16 "proxy" (formerly middleware). Must live in the project root.
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
   const session = await getIronSession<SessionData>(request, response, sessionOptions);
 
-  // If attempting to access any admin path without active session, redirect to login
-  if (request.nextUrl.pathname.startsWith("/admin") && !session.isAdmin) {
+  if (!session.isAdmin) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -15,5 +15,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/volunteers"],
 };

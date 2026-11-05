@@ -37,8 +37,8 @@ interface RoleItem {
   };
 }
 
-export default async function ServiceDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function ServiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const event = (await prisma.event.findUnique({
     where: { id },
     include: {

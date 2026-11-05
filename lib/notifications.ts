@@ -3,6 +3,10 @@ import * as ics from "ics";
 
 const resendApiKey = process.env.RESEND_API_KEY;
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
+function esc(v: string) {
+  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 const senderEmail = process.env.SENDER_EMAIL || "Church Scheduler <onboarding@resend.dev>";
 
 interface EmailPayload {
@@ -75,7 +79,8 @@ export async function sendVolunteerEmail({
     ? new Date(callTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
     : "Standard Service Call Time";
 
-  const appPortalUrl = "http://localhost:3000/portal";
+  const baseUrl = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+  const appPortalUrl = `${baseUrl}/portal`;
 
   // Generate .ics attachment
   const icsBuffer = await generateIcsBuffer(eventTitle, roleName, eventDate, callTime);
@@ -86,18 +91,18 @@ export async function sendVolunteerEmail({
         <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">⛪ Service Assignment</h1>
       </div>
       <div style="padding: 24px; color: #1f2937; line-height: 1.5;">
-        <p style="font-size: 16px; margin-top: 0;">Hi <strong>${volunteerName}</strong>,</p>
+        <p style="font-size: 16px; margin-top: 0;">Hi <strong>${esc(volunteerName)}</strong>,</p>
         <p style="font-size: 14px; color: #4b5563;">You have been scheduled for an upcoming service. A calendar event (<strong>.ics</strong>) is attached to this email so you can add it directly to your calendar.</p>
         
         <div style="background-color: #f9fafb; border: 1px solid #f3f4f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
           <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <tr>
               <td style="padding: 6px 0; color: #6b7280; font-weight: 600; width: 100px;">Event:</td>
-              <td style="padding: 6px 0; font-weight: 700; color: #111827;">${eventTitle}</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #111827;">${esc(eventTitle)}</td>
             </tr>
             <tr>
               <td style="padding: 6px 0; color: #6b7280; font-weight: 600;">Role:</td>
-              <td style="padding: 6px 0; font-weight: 700; color: #4f46e5;">${roleName}</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #4f46e5;">${esc(roleName)}</td>
             </tr>
             <tr>
               <td style="padding: 6px 0; color: #6b7280; font-weight: 600;">Date:</td>

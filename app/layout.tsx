@@ -1,6 +1,9 @@
 import "./globals.css";
 import Navbar from "./Components/navbar";
 
+// Every page reads live data, so never pre-build pages at deploy time.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Church Planner",
   description: "Church volunteer and service scheduling",

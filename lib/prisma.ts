@@ -1,13 +1,16 @@
-import { PrismaClient } from '@prisma/client';
-import { PrismaLibSQL } from '@prisma/adapter-libsql';
+import { PrismaClient } from "@prisma/client";
+import { PrismaLibSQL } from "@prisma/adapter-libsql";
 
-const adapter = new PrismaLibSQL({
-  url: process.env.TURSO_DATABASE_URL!,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
+// Online (Railway): uses the Turso cloud database from environment variables.
+// Locally with no Turso variables set: falls back to the local dev.db file.
+const url = process.env.TURSO_DATABASE_URL || "file:./prisma/dev.db";
+const authToken = process.env.TURSO_AUTH_TOKEN || undefined;
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const adapter = new PrismaLibSQL({ url, authToken });
 
-export const prisma = globalForPrisma.prisma || new PrismaClient({ adapter } as never);
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+export const prisma =
+  globalForPrisma.prisma || new PrismaClient({ adapter } as never);
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
