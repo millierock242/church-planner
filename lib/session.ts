@@ -4,6 +4,8 @@ import { getIronSession } from "iron-session";
 
 export interface SessionData {
   isAdmin?: boolean;
+  // Set when a ministry leader (not the main admin) is signed in.
+  leaderTeamId?: string;
 }
 
 export const defaultSession: SessionData = {

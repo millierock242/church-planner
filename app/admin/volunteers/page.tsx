@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { addVolunteer, approveVolunteer, deleteVolunteer } from "@/app/actions";
 import ConfirmButton from "@/app/Components/ConfirmButton";
@@ -8,6 +9,7 @@ export default async function AdminVolunteersPage({
 }: {
   searchParams: Promise<{ added?: string }>;
 }) {
+  await requireAdminPage();
   const { added } = await searchParams;
   const everyone = await prisma.user.findMany({
     orderBy: { fullName: "asc" },

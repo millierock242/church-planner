@@ -1,4 +1,4 @@
-import { updateMyAssignmentStatus } from "@/app/actions";
+import { updateMyAssignmentStatus, requestSwapByName } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
 import { normalizeName } from "@/lib/dates";
 import Link from "next/link";
@@ -22,8 +22,9 @@ export default async function VolunteerPortalPage({
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
+  const requireLink = process.env.REQUIRE_PRIVATE_LINK === "true";
   let assignments: Awaited<ReturnType<typeof findAssignments>> = [];
-  if (name) {
+  if (name && !requireLink) {
     // Exact full-name match, ignoring capital letters and extra spaces.
     const everyone = await prisma.user.findMany({ select: { id: true, fullName: true } });
     const ids = everyone.filter((u) => normalizeName(u.fullName) === normalizeName(name)).map((u) => u.id);
@@ -59,7 +60,16 @@ export default async function VolunteerPortalPage({
         </button>
       </form>
 
-      {name && (
+      {requireLink && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center mb-6">
+          <p className="text-sm text-gray-700">
+            For privacy, schedules are now opened with your <strong>personal link</strong>. Check the email you received when you were scheduled,
+            or ask your ministry leader to send it again.
+          </p>
+        </div>
+      )}
+
+      {name && !requireLink && (
         <div className="space-y-4">
           {assignments.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
@@ -81,6 +91,21 @@ export default async function VolunteerPortalPage({
                   <p className="text-xs font-medium text-gray-600 mt-1">
                     Volunteer: <span className="font-bold">{assignment.user.fullName}</span>
                   </p>
+                  {assignment.status === "swap_requested" ? (
+                    <p className="text-xs text-orange-700 mt-2">Replacement requested — a leader will follow up.</p>
+                  ) : (
+                    <details className="mt-2">
+                      <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">Can&apos;t make it? Ask for a replacement</summary>
+                      <form action={requestSwapByName} className="mt-2 flex gap-2">
+                        <input type="hidden" name="name" value={name} />
+                        <input type="hidden" name="assignmentId" value={assignment.id} />
+                        <input type="text" name="note" placeholder="Optional note (e.g. out of town)" className="flex-1 rounded-md border border-gray-300 p-1.5 text-xs" />
+                        <button type="submit" className="bg-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-md hover:bg-orange-600 cursor-pointer">
+                          Ask for swap
+                        </button>
+                      </form>
+                    </details>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">

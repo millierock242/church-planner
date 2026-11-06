@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { updateVolunteer } from "@/app/actions";
 import { notFound } from "next/navigation";
@@ -10,6 +11,7 @@ export default async function EditVolunteerPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdminPage();
   const { id } = await params;
   const { error } = await searchParams;
   const volunteer = await prisma.user.findUnique({ where: { id } });

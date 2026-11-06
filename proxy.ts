@@ -7,7 +7,7 @@ export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
   const session = await getIronSession<SessionData>(request, response, sessionOptions);
 
-  if (!session.isAdmin) {
+  if (!session.isAdmin && !session.leaderTeamId) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

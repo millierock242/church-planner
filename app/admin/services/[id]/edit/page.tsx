@@ -1,3 +1,4 @@
+import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { updateEvent } from "@/app/actions";
 import { toDateTimeLocal } from "@/lib/dates";
@@ -11,6 +12,7 @@ export default async function EditServicePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdminPage();
   const { id } = await params;
   const { error } = await searchParams;
   const event = await prisma.event.findUnique({ where: { id } });

@@ -23,12 +23,14 @@ model Team {
   description String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  leaderPasswordHash String?
   roles       TeamRole[]
 }
 
 model TeamRole {
   id          String              @id @default(cuid())
   name        String
+  requiredByDefault Boolean         @default(false)
   teamId      String
   team        Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
   assignments ServiceAssignment[]
@@ -42,6 +44,8 @@ model User {
   email       String?             @unique
   role        String              @default("volunteer")
   isApproved  Boolean             @default(true)
+  accessToken String?             @unique
+  blockouts   BlockoutDate[]
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   assignments ServiceAssignment[]
@@ -56,6 +60,18 @@ model ServiceAssignment {
   roleId    String
   role      TeamRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
   status    String   @default("pending")
+  swapNote  String?
+  reminder3dSentAt DateTime?
+  reminder1dSentAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model BlockoutDate {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  note      String?
+  createdAt DateTime @default(now())
 }

@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { deleteEvent } from "@/app/actions";
 import ConfirmButton from "@/app/Components/ConfirmButton";
+import { getAccess } from "@/lib/auth";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminServicesPage() {
+  const access = await getAccess();
   const events = await prisma.event.findMany({
     orderBy: { eventDate: "desc" },
     include: {
@@ -19,12 +21,14 @@ export default async function AdminServicesPage() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Services & Rosters</h1>
-        <Link
-          href="/admin/services/new"
-          className="bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-brand-700"
-        >
-          Schedule New Service
-        </Link>
+        {access.isAdmin && (
+          <Link
+            href="/admin/services/new"
+            className="bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-brand-700"
+          >
+            Schedule New Service
+          </Link>
+        )}
       </div>
 
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
@@ -54,6 +58,8 @@ export default async function AdminServicesPage() {
                 >
                   Manage Roster →
                 </Link>
+                {access.isAdmin && (
+                  <>
                 <Link
                   href={`/admin/services/${event.id}/edit`}
                   className="text-gray-600 hover:text-gray-900 text-sm font-medium"
@@ -69,6 +75,8 @@ export default async function AdminServicesPage() {
                     Delete
                   </ConfirmButton>
                 </form>
+                  </>
+                )}
               </div>
             </li>
           ))}

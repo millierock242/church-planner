@@ -72,9 +72,10 @@ export default async function MasterRosterPage() {
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                         assignment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                         assignment.status === 'declined' ? 'bg-red-100 text-red-800' :
+                        assignment.status === 'swap_requested' ? 'bg-orange-100 text-orange-800' :
                         'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {assignment.status}
+                        {assignment.status.replace('_', ' ')}
                       </span>
                     </td>
                   </tr>
