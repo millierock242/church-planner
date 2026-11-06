@@ -4,6 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { getSession, isAdmin } from "@/lib/session";
 import { sendVolunteerEmail } from "@/lib/notifications";
+import { normalizeName } from "@/lib/dates";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -38,20 +39,20 @@ export async function logoutAdmin() {
 }
 
 // Public on purpose, but a volunteer can only change an assignment that
-// belongs to the email address they looked up.
-export async function updateMyAssignmentStatus(assignmentId: string, status: string, email: string) {
+// belongs to the name they looked up.
+export async function updateMyAssignmentStatus(assignmentId: string, status: string, name: string) {
   if (status !== "confirmed" && status !== "declined") {
     return { success: false, error: "Invalid status" };
   }
-  const cleanEmail = email.trim().toLowerCase();
-  if (!cleanEmail) return { success: false, error: "Email required" };
+  const cleanName = normalizeName(name);
+  if (!cleanName) return { success: false, error: "Name required" };
 
   try {
     const assignment = await prisma.serviceAssignment.findUnique({
       where: { id: assignmentId },
       include: { user: true },
     });
-    if (!assignment || assignment.user.email?.toLowerCase() !== cleanEmail) {
+    if (!assignment || normalizeName(assignment.user.fullName) !== cleanName) {
       return { success: false, error: "Assignment not found" };
     }
     await prisma.serviceAssignment.update({
