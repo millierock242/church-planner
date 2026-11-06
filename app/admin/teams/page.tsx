@@ -26,13 +26,13 @@ export default async function AdminTeamsPage({
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Teams & Roles</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Ministries & Roles</h1>
 
       {roleStatus === "ok" && (
         <p className="mb-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm p-3">Role added.</p>
       )}
       {roleStatus === "exists" && (
-        <p className="mb-4 rounded-md bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm p-3">That team already has a role with that name.</p>
+        <p className="mb-4 rounded-md bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm p-3">That ministry already has a role with that name.</p>
       )}
       {(roleStatus === "missing" || roleStatus === "error") && (
         <p className="mb-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm p-3">
@@ -41,7 +41,7 @@ export default async function AdminTeamsPage({
       )}
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-lg font-semibold mb-4">Create New Team</h2>
+        <h2 className="text-lg font-semibold mb-4">Create New Ministry</h2>
         <form 
           action={async (formData) => {
             "use server";
@@ -50,7 +50,7 @@ export default async function AdminTeamsPage({
           className="space-y-4 max-w-xl"
         >
           <div>
-            <label className="block text-sm font-medium text-gray-700">Team Name</label>
+            <label className="block text-sm font-medium text-gray-700">Ministry Name</label>
             <input type="text" name="name" required className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm" />
           </div>
           <div>
@@ -58,7 +58,7 @@ export default async function AdminTeamsPage({
             <textarea name="description" rows={2} className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm" />
           </div>
           <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
-            Add Team
+            Add Ministry
           </button>
         </form>
       </div>

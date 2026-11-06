@@ -37,7 +37,7 @@ export default async function PrintServicePage({ params }: { params: Promise<{ i
       <table className="w-full border-collapse border border-gray-300">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border border-gray-300 p-2 text-left">Team / Role</th>
+            <th className="border border-gray-300 p-2 text-left">Ministry / Role</th>
             <th className="border border-gray-300 p-2 text-left">Volunteer</th>
             <th className="border border-gray-300 p-2 text-left">Status</th>
           </tr>

@@ -62,7 +62,7 @@ export default async function HomePage({
 
       <div id="signup" className="bg-white shadow rounded-lg p-6 mb-8">
         <h2 className="text-xl font-semibold text-gray-800 mb-1">Volunteer Sign-Up</h2>
-        <p className="text-sm text-gray-500 mb-4">Want to serve? Add your name and email and the team will be in touch.</p>
+        <p className="text-sm text-gray-500 mb-4">Want to serve? Add your name and email and a ministry leader will be in touch.</p>
 
         {signup === "success" && (
           <p className="mb-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm p-3">

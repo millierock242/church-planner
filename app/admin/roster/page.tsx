@@ -45,7 +45,7 @@ export default async function MasterRosterPage() {
                 <tr>
                   <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Service Date & Event</th>
                   <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Volunteer</th>
-                  <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Team / Role</th>
+                  <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Ministry / Role</th>
                   <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
                 </tr>
               </thead>

@@ -24,7 +24,7 @@ export default async function Navbar() {
                 Volunteers
               </Link>
               <Link href="/admin/teams" className="text-sm font-medium text-gray-700 hover:text-indigo-600">
-                Teams
+                Ministries
               </Link>
             </>
           )}

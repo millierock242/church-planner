@@ -127,7 +127,7 @@ export async function createTeam(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
 
-  if (!name) return { success: false, error: "Team name is required" };
+  if (!name) return { success: false, error: "Ministry name is required" };
 
   try {
     await prisma.team.create({
@@ -140,7 +140,7 @@ export async function createTeam(formData: FormData) {
     return { success: true };
   } catch (error) {
     console.error("Failed to create team:", error);
-    return { success: false, error: "Failed to create team" };
+    return { success: false, error: "Failed to create ministry" };
   }
 }
 

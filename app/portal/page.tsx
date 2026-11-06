@@ -64,7 +64,7 @@ export default async function VolunteerPortalPage({
           {assignments.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
               <p className="text-sm text-gray-500 italic">
-                No upcoming assignments found for that name. Check the spelling (use the name you signed up with), or ask your team leader.
+                No upcoming assignments found for that name. Check the spelling (use the name you signed up with), or ask your ministry leader.
               </p>
             </div>
           ) : (
