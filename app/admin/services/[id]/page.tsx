@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { createAssignment, deleteAssignment, deleteEvent, copyRoster } from "@/app/actions";
 import { getAccess, canManageTeam } from "@/lib/auth";
 import ConfirmButton from "@/app/Components/ConfirmButton";
+import AssignForm from "@/app/Components/AssignForm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -43,7 +44,18 @@ export default async function ServiceDetailPage({
   });
   if (!event) notFound();
 
-  const volunteers = await prisma.user.findMany({ where: { isApproved: true }, orderBy: { fullName: "asc" } });
+  const volunteerRows = await prisma.user.findMany({
+    where: { isApproved: true, status: "active" },
+    orderBy: { fullName: "asc" },
+    include: { memberships: true, qualifications: true },
+  });
+  const volunteers = volunteerRows.map((v) => ({
+    id: v.id,
+    name: v.fullName,
+    teamIds: v.memberships.map((m) => m.teamId),
+    roleIds: v.qualifications.map((q) => q.roleId),
+    labels: (v.tags ?? "").split(",").map((t) => t.trim()).filter(Boolean),
+  }));
   const allRoles = await prisma.teamRole.findMany({ include: { team: true }, orderBy: { name: "asc" } });
   const roles = allRoles.filter((r) => canManageTeam(access, r.teamId));
 
@@ -105,6 +117,9 @@ export default async function ServiceDetailPage({
       {notice === "forbidden" && (
         <p className="mb-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm p-3">You can only schedule people for your own ministry.</p>
       )}
+      {notice === "inactive" && (
+        <p className="mb-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm p-3">That volunteer is on a break or inactive. Change their status first to schedule them.</p>
+      )}
       {notice === "unapproved" && (
         <p className="mb-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm p-3">That volunteer hasn&apos;t been approved yet.</p>
       )}
@@ -134,30 +149,12 @@ export default async function ServiceDetailPage({
 
       <div className="bg-white shadow rounded-lg p-6 mb-8">
         <h2 className="text-lg font-semibold mb-4">Assign Volunteer</h2>
-        <form action={createAssignment} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-          <input type="hidden" name="eventId" value={event.id} />
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Volunteer</label>
-            <select name="userId" required className={field}>
-              <option value="">Select volunteer...</option>
-              {volunteers.map((vol) => (
-                <option key={vol.id} value={vol.id}>{vol.fullName}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Role</label>
-            <select name="roleId" required className={field}>
-              <option value="">Select role...</option>
-              {roles.map((role) => (
-                <option key={role.id} value={role.id}>{role.team.name}: {role.name}</option>
-              ))}
-            </select>
-          </div>
-          <button type="submit" className="bg-brand-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-brand-700 cursor-pointer">
-            Assign
-          </button>
-        </form>
+        <AssignForm
+          action={createAssignment}
+          eventId={event.id}
+          volunteers={volunteers}
+          roles={roles.map((r) => ({ id: r.id, name: r.name, teamId: r.teamId, teamName: r.team.name }))}
+        />
         <p className="text-xs text-gray-500 mt-3">
           The app warns you if the person marked the day as unavailable or is already serving around that time.
         </p>

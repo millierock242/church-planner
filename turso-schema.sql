@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS "User" (
     "role" TEXT NOT NULL DEFAULT 'volunteer',
     "isApproved" BOOLEAN NOT NULL DEFAULT true,
     "accessToken" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "tags" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
@@ -65,5 +67,23 @@ CREATE TABLE IF NOT EXISTS "BlockoutDate" (
     CONSTRAINT "BlockoutDate_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS "TeamMember" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "teamId" TEXT NOT NULL,
+    CONSTRAINT "TeamMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "TeamMember_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS "RoleQualification" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "roleId" TEXT NOT NULL,
+    CONSTRAINT "RoleQualification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "RoleQualification_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "TeamRole" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "TeamMember_userId_teamId_key" ON "TeamMember"("userId", "teamId");
+CREATE UNIQUE INDEX IF NOT EXISTS "RoleQualification_userId_roleId_key" ON "RoleQualification"("userId", "roleId");
 CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX IF NOT EXISTS "User_accessToken_key" ON "User"("accessToken");

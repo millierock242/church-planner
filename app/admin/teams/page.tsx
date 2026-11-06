@@ -7,6 +7,7 @@ interface TeamWithRoles {
   name: string;
   description: string | null;
   leaderPasswordHash: string | null;
+  _count: { members: number };
   roles: {
     id: string;
     name: string;
@@ -25,6 +26,7 @@ export default async function AdminTeamsPage({
     orderBy: { name: "asc" },
     include: {
       roles: true,
+      _count: { select: { members: true } },
     },
   });
 
@@ -81,6 +83,7 @@ export default async function AdminTeamsPage({
           <div key={team.id} className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-bold text-gray-900">{team.name}</h3>
             <p className="text-xs text-gray-500 mt-1">{team.description || "No description provided."}</p>
+            <p className="text-xs text-brand-700 mt-1">{team._count.members} member{team._count.members === 1 ? "" : "s"}</p>
             <div className="mt-4">
               <h4 className="text-sm font-semibold text-gray-700 mb-2">Roles:</h4>
               <ul className="text-sm text-gray-600 space-y-1">

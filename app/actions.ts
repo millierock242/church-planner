@@ -154,6 +154,7 @@ export async function createAssignment(formData: FormData) {
   if (!event || !role || !person) redirect(`${back}?notice=error`);
   if (!canManageTeam(access, role.teamId)) redirect(`${back}?notice=forbidden`);
   if (!person.isApproved) redirect(`${back}?notice=unapproved`);
+  if (person.status !== "active") redirect(`${back}?notice=inactive`);
 
   if (!override) {
     const reasons = await findConflicts(userId, event, roleId);
@@ -236,21 +237,47 @@ export async function updateVolunteer(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const rawStatus = String(formData.get("status") ?? "active");
+  const status = ["active", "on_break", "inactive"].includes(rawStatus) ? rawStatus : "active";
+  // Labels: comma-separated, tidy and de-duplicated.
+  const tagList = Array.from(
+    new Set(
+      String(formData.get("tags") ?? "")
+        .split(",")
+        .map((t) => t.trim().replace(/\s+/g, " ").slice(0, 30))
+        .filter(Boolean)
+    )
+  ).slice(0, 15);
+  const teamIds = Array.from(new Set(formData.getAll("teamIds").map(String).filter(Boolean)));
+  const roleIds = Array.from(new Set(formData.getAll("roleIds").map(String).filter(Boolean)));
 
   if (!id || !fullName) redirect(`/admin/volunteers/${id}/edit?error=1`);
 
   try {
-    await prisma.user.update({
-      where: { id },
-      data: { fullName, email: email || null },
-    });
+    // Only keep ministries/roles that really exist.
+    const [teams, roles] = await Promise.all([
+      prisma.team.findMany({ where: { id: { in: teamIds } }, select: { id: true } }),
+      prisma.teamRole.findMany({ where: { id: { in: roleIds } }, select: { id: true } }),
+    ]);
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id },
+        data: { fullName, email: email || null, status, tags: tagList.length ? tagList.join(", ") : null },
+      }),
+      prisma.teamMember.deleteMany({ where: { userId: id } }),
+      prisma.roleQualification.deleteMany({ where: { userId: id } }),
+      ...teams.map((t) => prisma.teamMember.create({ data: { userId: id, teamId: t.id } })),
+      ...roles.map((r) => prisma.roleQualification.create({ data: { userId: id, roleId: r.id } })),
+    ]);
   } catch (error) {
     console.error("Failed to update volunteer:", error);
     redirect(`/admin/volunteers/${id}/edit?error=1`);
   }
   revalidatePath("/admin/volunteers");
   revalidatePath("/admin/roster");
-  redirect("/admin/volunteers");
+  revalidatePath("/admin/teams");
+  redirect("/admin/volunteers?added=saved");
 }
 
 export async function deleteVolunteer(formData: FormData) {
@@ -318,8 +345,9 @@ export async function addVolunteer(formData: FormData) {
 
   if (!fullName) redirect("/admin/volunteers?added=missing");
 
+  let created: { id: string };
   try {
-    await prisma.user.create({
+    created = await prisma.user.create({
       data: { fullName, email: email || null, role: "volunteer", accessToken: newToken() },
     });
   } catch (error) {
@@ -327,7 +355,7 @@ export async function addVolunteer(formData: FormData) {
     redirect("/admin/volunteers?added=error");
   }
   revalidatePath("/admin/volunteers");
-  redirect("/admin/volunteers?added=ok");
+  redirect(`/admin/volunteers/${created.id}/edit?new=1`);
 }
 
 // ---------- Roles (admin) ----------
@@ -367,7 +395,7 @@ export async function approveVolunteer(formData: FormData) {
   }
   revalidatePath("/admin/volunteers");
   revalidatePath("/admin/services");
-  redirect("/admin/volunteers?added=approved");
+  redirect(`/admin/volunteers/${id}/edit?approved=1`);
 }
 
 // ---------- Volunteer self-service (private link) ----------
@@ -475,7 +503,7 @@ export async function reassignAssignment(formData: FormData) {
     include: { event: true, role: true },
   });
   const person = await prisma.user.findUnique({ where: { id: newUserId } });
-  if (a && person && person.isApproved && canManageTeam(access, a.role.teamId)) {
+  if (a && person && person.isApproved && person.status === "active" && canManageTeam(access, a.role.teamId)) {
     await prisma.serviceAssignment.update({
       where: { id },
       data: { userId: newUserId, status: "pending", swapNote: null, reminder1dSentAt: null, reminder3dSentAt: null },
@@ -531,7 +559,7 @@ export async function copyRoster(formData: FormData) {
   let copied = 0;
   let skipped = 0;
   for (const a of source) {
-    if (!canManageTeam(access, a.role.teamId) || !a.user.isApproved) { skipped++; continue; }
+    if (!canManageTeam(access, a.role.teamId) || !a.user.isApproved || a.user.status !== "active") { skipped++; continue; }
     if (existing.some((e) => e.userId === a.userId && e.roleId === a.roleId)) { skipped++; continue; }
     const reasons = await findConflicts(a.userId, toEvent, a.roleId);
     if (reasons.length > 0) { skipped++; continue; }

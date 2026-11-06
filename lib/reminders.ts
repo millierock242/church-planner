@@ -15,7 +15,7 @@ export async function runReminders(force = false): Promise<{ sent: number; skipp
     where: {
       status: { in: ["pending", "confirmed"] },
       event: { eventDate: { gt: now, lte: in72 } },
-      user: { isApproved: true, email: { not: null } },
+      user: { isApproved: true, status: "active", email: { not: null } },
     },
     include: { event: true, user: true, role: true },
   });

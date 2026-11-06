@@ -11,7 +11,7 @@ export default async function ReportsPage() {
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
   const volunteers = await prisma.user.findMany({
-    where: { isApproved: true },
+    where: { isApproved: true, status: "active" },
     orderBy: { fullName: "asc" },
     include: { assignments: { include: { event: true } } },
   });

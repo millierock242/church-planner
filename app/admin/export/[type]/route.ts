@@ -22,8 +22,23 @@ export async function GET(_request: Request, { params }: { params: Promise<{ typ
   let rows: unknown[][];
 
   if (type === "volunteers") {
-    const list = await prisma.user.findMany({ orderBy: { fullName: "asc" } });
-    rows = [["Name", "Email", "Approved", "Signed up"], ...list.map((u) => [u.fullName, u.email, u.isApproved ? "yes" : "no", day(u.createdAt)])];
+    const list = await prisma.user.findMany({
+      orderBy: { fullName: "asc" },
+      include: { memberships: { include: { team: true } }, qualifications: { include: { role: true } } },
+    });
+    rows = [
+      ["Name", "Email", "Approved", "Status", "Ministries", "Trained for roles", "Labels", "Signed up"],
+      ...list.map((u) => [
+        u.fullName,
+        u.email,
+        u.isApproved ? "yes" : "no",
+        u.status,
+        u.memberships.map((m) => m.team.name).join("; "),
+        u.qualifications.map((q) => q.role.name).join("; "),
+        u.tags,
+        day(u.createdAt),
+      ]),
+    ];
   } else if (type === "assignments") {
     const list = await prisma.serviceAssignment.findMany({
       include: { event: true, user: true, role: { include: { team: true } } },

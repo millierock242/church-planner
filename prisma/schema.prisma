@@ -25,12 +25,14 @@ model Team {
   updatedAt   DateTime   @updatedAt
   leaderPasswordHash String?
   roles       TeamRole[]
+  members     TeamMember[]
 }
 
 model TeamRole {
   id          String              @id @default(cuid())
   name        String
   requiredByDefault Boolean         @default(false)
+  qualified   RoleQualification[]
   teamId      String
   team        Team                @relation(fields: [teamId], references: [id], onDelete: Cascade)
   assignments ServiceAssignment[]
@@ -45,7 +47,11 @@ model User {
   role        String              @default("volunteer")
   isApproved  Boolean             @default(true)
   accessToken String?             @unique
+  status      String              @default("active")
+  tags        String?
   blockouts   BlockoutDate[]
+  memberships TeamMember[]
+  qualifications RoleQualification[]
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   assignments ServiceAssignment[]
@@ -74,4 +80,26 @@ model BlockoutDate {
   date      DateTime
   note      String?
   createdAt DateTime @default(now())
+}
+
+// Which ministries a volunteer belongs to.
+model TeamMember {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamId String
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+}
+
+// Which roles a volunteer is trained for.
+model RoleQualification {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId String
+  role   TeamRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
 }

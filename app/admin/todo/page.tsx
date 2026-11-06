@@ -33,7 +33,11 @@ export default async function TodoPage() {
       orderBy: { event: { eventDate: "asc" } },
     }),
     access.isAdmin ? prisma.user.count({ where: { isApproved: false } }) : Promise.resolve(0),
-    prisma.user.findMany({ where: { isApproved: true }, orderBy: { fullName: "asc" }, select: { id: true, fullName: true } }),
+    prisma.user.findMany({
+      where: { isApproved: true, status: "active" },
+      orderBy: { fullName: "asc" },
+      select: { id: true, fullName: true, qualifications: { select: { roleId: true } } },
+    }),
     prisma.event.findMany({
       where: { eventDate: { gte: now, lte: in60 } },
       orderBy: { eventDate: "asc" },
@@ -89,9 +93,20 @@ export default async function TodoPage() {
                   <input type="hidden" name="id" value={a.id} />
                   <select name="newUserId" required className="rounded-md border border-gray-300 p-2 text-sm">
                     <option value="">Replace with...</option>
-                    {volunteers.filter((v) => v.id !== a.userId).map((v) => (
-                      <option key={v.id} value={v.id}>{v.fullName}</option>
-                    ))}
+                    <optgroup label={`Trained for ${a.role.name}`}>
+                      {volunteers
+                        .filter((v) => v.id !== a.userId && v.qualifications.some((q) => q.roleId === a.roleId))
+                        .map((v) => (
+                          <option key={v.id} value={v.id}>{v.fullName}</option>
+                        ))}
+                    </optgroup>
+                    <optgroup label="Everyone else">
+                      {volunteers
+                        .filter((v) => v.id !== a.userId && !v.qualifications.some((q) => q.roleId === a.roleId))
+                        .map((v) => (
+                          <option key={v.id} value={v.id}>{v.fullName}</option>
+                        ))}
+                    </optgroup>
                   </select>
                   <button type="submit" className="bg-brand-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-brand-700 cursor-pointer">
                     Replace &amp; notify

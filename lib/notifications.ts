@@ -20,7 +20,15 @@ function parseSender(value: string): { name: string; email: string } {
 const senderEmail = process.env.SENDER_EMAIL || `${SITE_NAME} <onboarding@resend.dev>`;
 
 export function siteUrl(): string {
-  return (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+  const fromEnv = (process.env.APP_URL || "").trim().replace(/^["']|["']$/g, "");
+  if (fromEnv) {
+    const withScheme = /^https?:\/\//i.test(fromEnv) ? fromEnv : `https://${fromEnv}`;
+    return withScheme.replace(/\/+$/, "");
+  }
+  // Railway fills this in by itself once you have generated a public domain.
+  const railway = (process.env.RAILWAY_PUBLIC_DOMAIN || "").trim();
+  if (railway) return `https://${railway}`.replace(/\/+$/, "");
+  return "http://localhost:3000";
 }
 
 // ---------------------------------------------------------------------------
