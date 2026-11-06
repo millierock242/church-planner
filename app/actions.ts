@@ -155,6 +155,10 @@ export async function createAssignment(formData: FormData) {
   }
 
   try {
+    const person = await prisma.user.findUnique({ where: { id: userId } });
+    if (!person || !person.isApproved) {
+      return { success: false, error: "That volunteer hasn't been approved yet" };
+    }
     const assignment = await prisma.serviceAssignment.create({
       data: { eventId, userId, roleId, status: "pending" },
       include: { event: true, user: true, role: true },
@@ -288,7 +292,7 @@ export async function signUpVolunteer(formData: FormData) {
 
   try {
     await prisma.user.create({
-      data: { fullName, email, role: "volunteer" },
+      data: { fullName, email, role: "volunteer", isApproved: false },
     });
   } catch (error) {
     console.error("Failed to sign up volunteer:", error);
@@ -342,4 +346,17 @@ export async function addRole(formData: FormData) {
   revalidatePath("/admin/teams");
   revalidatePath("/admin/services");
   redirect("/admin/teams?role=ok");
+}
+
+export async function approveVolunteer(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  try {
+    await prisma.user.update({ where: { id }, data: { isApproved: true } });
+  } catch (error) {
+    console.error("Failed to approve volunteer:", error);
+  }
+  revalidatePath("/admin/volunteers");
+  revalidatePath("/admin/services");
+  redirect("/admin/volunteers?added=approved");
 }

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { isAdmin } from "@/lib/session";
 import { logoutAdmin } from "@/app/actions";
+import { prisma } from "@/lib/prisma";
 
 export default async function Navbar() {
   const admin = await isAdmin();
+  const pendingCount = admin ? await prisma.user.count({ where: { isApproved: false } }) : 0;
 
   return (
     <nav className="bg-white shadow-sm border-b-4 border-brand-500">
@@ -22,6 +24,11 @@ export default async function Navbar() {
               </Link>
               <Link href="/admin/volunteers" className="text-sm font-medium text-gray-700 hover:text-brand-600">
                 Volunteers
+                {pendingCount > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-yellow-400 text-yellow-900 text-xs font-bold h-5 min-w-5 px-1.5">
+                    {pendingCount}
+                  </span>
+                )}
               </Link>
               <Link href="/admin/teams" className="text-sm font-medium text-gray-700 hover:text-brand-600">
                 Ministries

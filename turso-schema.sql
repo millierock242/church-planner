@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS "User" (
     "fullName" TEXT NOT NULL,
     "email" TEXT,
     "role" TEXT NOT NULL DEFAULT 'volunteer',
+    "isApproved" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );

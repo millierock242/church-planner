@@ -66,7 +66,7 @@ export default async function HomePage({
 
         {signup === "success" && (
           <p className="mb-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm p-3">
-            Thank you for signing up! You&apos;ve been added to the volunteer list.
+            Thank you for signing up! A ministry leader will review your sign-up and be in touch.
           </p>
         )}
         {signup === "exists" && (

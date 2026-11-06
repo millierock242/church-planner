@@ -7,6 +7,13 @@ function esc(v: string) {
   return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+// Splits "Name <me@example.com>" into its two parts.
+function parseSender(value: string): { name: string; email: string } {
+  const m = value.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (m) return { name: m[1].replace(/^"|"$/g, "") || "Christ Community Church’s Planner", email: m[2] };
+  return { name: "Christ Community Church’s Planner", email: value.trim() };
+}
+
 const senderEmail = process.env.SENDER_EMAIL || "Christ Community Church Planner <onboarding@resend.dev>";
 
 interface EmailPayload {
@@ -23,8 +30,10 @@ async function generateIcsBuffer(
   eventTitle: string,
   roleName: string,
   eventDate: Date,
-  callTime?: Date | null
+  callTime?: Date | null,
+  attendee?: { name: string; email: string }
 ): Promise<Buffer | null> {
+  const organizer = parseSender(senderEmail);
   const startDate = callTime ? new Date(callTime) : new Date(eventDate);
   
   return new Promise((resolve) => {
@@ -42,6 +51,9 @@ async function generateIcsBuffer(
         duration: { hours: 2, minutes: 0 },
         status: "CONFIRMED",
         busyStatus: "BUSY",
+        method: "REQUEST",
+        organizer: { name: organizer.name, email: organizer.email },
+        ...(attendee ? { attendees: [{ name: attendee.name, email: attendee.email, rsvp: true }] } : {}),
       },
       (error, value) => {
         if (error || !value) {
@@ -83,7 +95,7 @@ export async function sendVolunteerEmail({
   const appPortalUrl = `${baseUrl}/portal`;
 
   // Generate .ics attachment
-  const icsBuffer = await generateIcsBuffer(eventTitle, roleName, eventDate, callTime);
+  const icsBuffer = await generateIcsBuffer(eventTitle, roleName, eventDate, callTime, { name: volunteerName, email: toEmail });
 
   const htmlContent = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
@@ -127,21 +139,48 @@ export async function sendVolunteerEmail({
     </div>
   `;
 
+  const subject = `Service Assignment: ${eventTitle} (${roleName})`;
+
+  // Option 1 (free, works on Railway): Brevo over HTTPS.
+  const brevoKey = process.env.BREVO_API_KEY;
+  if (brevoKey) {
+    try {
+      const from = parseSender(senderEmail);
+      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: { "api-key": brevoKey, "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({
+          sender: { name: from.name, email: from.email },
+          to: [{ email: toEmail, name: volunteerName }],
+          subject,
+          htmlContent: htmlContent,
+          ...(icsBuffer
+            ? { attachment: [{ name: "service-invite.ics", content: icsBuffer.toString("base64") }] }
+            : {}),
+        }),
+      });
+      if (!response.ok) {
+        console.error("[BREVO ERROR]:", response.status, await response.text());
+      } else {
+        console.log(`[BREVO SUCCESS] Delivered email with calendar invite to ${toEmail}`);
+      }
+    } catch (error) {
+      console.error("[BREVO EXCEPTION]:", error);
+    }
+    return;
+  }
+
+  // Option 2: Resend (needs a verified domain to email other people).
   if (resend) {
     try {
       const attachments = icsBuffer
-        ? [
-            {
-              filename: `service-assignment.ics`,
-              content: icsBuffer,
-            },
-          ]
+        ? [{ filename: "service-invite.ics", content: icsBuffer }]
         : [];
 
       const response = await resend.emails.send({
         from: senderEmail,
         to: toEmail,
-        subject: `Service Assignment: ${eventTitle} (${roleName})`,
+        subject,
         html: htmlContent,
         attachments,
       });
@@ -155,7 +194,7 @@ export async function sendVolunteerEmail({
       console.error("[RESEND EXCEPTION]:", error);
     }
   } else {
-    console.log(`[RESEND SKIPPED] RESEND_API_KEY missing in .env`);
+    console.log("[EMAIL SKIPPED] Neither BREVO_API_KEY nor RESEND_API_KEY is set");
   }
 }
 

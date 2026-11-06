@@ -54,7 +54,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
 
   if (!event) notFound();
 
-  const volunteers: VolunteerItem[] = await prisma.user.findMany({ orderBy: { fullName: "asc" } });
+  const volunteers: VolunteerItem[] = await prisma.user.findMany({ where: { isApproved: true }, orderBy: { fullName: "asc" } });
   const roles: RoleItem[] = await prisma.teamRole.findMany({ include: { team: true }, orderBy: { name: "asc" } });
 
   return (

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { addVolunteer, deleteVolunteer } from "@/app/actions";
+import { addVolunteer, approveVolunteer, deleteVolunteer } from "@/app/actions";
 import ConfirmButton from "@/app/Components/ConfirmButton";
 import Link from "next/link";
 
@@ -9,10 +9,12 @@ export default async function AdminVolunteersPage({
   searchParams: Promise<{ added?: string }>;
 }) {
   const { added } = await searchParams;
-  const volunteers = await prisma.user.findMany({
+  const everyone = await prisma.user.findMany({
     orderBy: { fullName: "asc" },
     include: { _count: { select: { assignments: true } } },
   });
+  const pending = everyone.filter((v) => !v.isApproved);
+  const volunteers = everyone.filter((v) => v.isApproved);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -21,6 +23,9 @@ export default async function AdminVolunteersPage({
       </div>
 
 
+      {added === "approved" && (
+        <p className="mb-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm p-3">Volunteer approved. They can now be scheduled.</p>
+      )}
       {added === "ok" && (
         <p className="mb-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm p-3">Volunteer added.</p>
       )}
@@ -46,6 +51,41 @@ export default async function AdminVolunteersPage({
           </button>
         </form>
       </div>
+
+      {pending.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 shadow overflow-hidden sm:rounded-md mb-8">
+          <h2 className="px-6 py-3 text-sm font-semibold text-yellow-900 border-b border-yellow-200">
+            Waiting for approval ({pending.length})
+          </h2>
+          <ul className="divide-y divide-yellow-200">
+            {pending.map((vol) => (
+              <li key={vol.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold text-gray-900">{vol.fullName}</p>
+                  <p className="text-xs text-gray-600">{vol.email || "No email provided"}</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <form action={approveVolunteer}>
+                    <input type="hidden" name="id" value={vol.id} />
+                    <button type="submit" className="bg-brand-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-brand-700 cursor-pointer">
+                      Approve
+                    </button>
+                  </form>
+                  <form action={deleteVolunteer}>
+                    <input type="hidden" name="id" value={vol.id} />
+                    <ConfirmButton
+                      message={`Reject and delete ${vol.fullName}'s sign-up?`}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium cursor-pointer"
+                    >
+                      Reject
+                    </ConfirmButton>
+                  </form>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <ul className="divide-y divide-gray-200">
