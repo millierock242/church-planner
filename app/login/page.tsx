@@ -8,7 +8,7 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white shadow rounded-lg p-8">
         <h1 className="text-2xl font-bold text-center text-gray-900 mb-6">Admin Login</h1>
         {error && (
@@ -21,7 +21,7 @@ export default async function LoginPage({
             <label className="block text-sm font-medium text-gray-700">Admin Password</label>
             <input type="password" name="password" required className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm" />
           </div>
-          <button type="submit" className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-indigo-700 cursor-pointer">
+          <button type="submit" className="w-full bg-brand-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-brand-700 cursor-pointer">
             Sign In
           </button>
         </form>

@@ -41,7 +41,7 @@ export default async function AdminVolunteersPage({
             <label className="block text-sm font-medium text-gray-700">Email (optional)</label>
             <input type="email" name="email" className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm" />
           </div>
-          <button type="submit" className="bg-indigo-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-indigo-700 cursor-pointer">
+          <button type="submit" className="bg-brand-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-brand-700 cursor-pointer">
             Add Volunteer
           </button>
         </form>
@@ -57,7 +57,7 @@ export default async function AdminVolunteersPage({
               </div>
               <div className="flex items-center space-x-4">
                 <span className="text-xs text-gray-400">{vol._count.assignments} assignments</span>
-                <Link href={`/admin/volunteers/${vol.id}/edit`} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                <Link href={`/admin/volunteers/${vol.id}/edit`} className="text-brand-600 hover:text-brand-900 text-sm font-medium">
                   Edit
                 </Link>
                 <form action={deleteVolunteer}>

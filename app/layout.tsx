@@ -5,8 +5,8 @@ import Navbar from "./Components/navbar";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Church Planner",
-  description: "Church volunteer and service scheduling",
+  title: "Christ Community Church’s Planner",
+  description: "Volunteer and service scheduling for Christ Community Church",
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 text-gray-900 antialiased min-h-screen">
+      <body className="bg-brand-50 text-gray-900 antialiased min-h-screen">
         <Navbar />
         {children}
       </body>

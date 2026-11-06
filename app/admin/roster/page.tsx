@@ -34,7 +34,7 @@ export default async function MasterRosterPage() {
         {assignments.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-sm text-gray-500 italic">No volunteer assignments found across any services yet.</p>
-            <Link href="/admin/services" className="mt-4 inline-block text-xs font-semibold text-indigo-600 hover:underline">
+            <Link href="/admin/services" className="mt-4 inline-block text-xs font-semibold text-brand-600 hover:underline">
               Go manage services and assign volunteers →
             </Link>
           </div>
@@ -63,7 +63,7 @@ export default async function MasterRosterPage() {
                       <p className="text-xs text-gray-400">{assignment.user.email || "No email"}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md">
+                      <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2.5 py-1 rounded-md">
                         {assignment.role.team.name}
                       </span>
                       <p className="text-xs text-gray-600 mt-1">{assignment.role.name}</p>

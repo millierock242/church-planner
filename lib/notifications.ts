@@ -7,7 +7,7 @@ function esc(v: string) {
   return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-const senderEmail = process.env.SENDER_EMAIL || "Church Scheduler <onboarding@resend.dev>";
+const senderEmail = process.env.SENDER_EMAIL || "Christ Community Church Planner <onboarding@resend.dev>";
 
 interface EmailPayload {
   toEmail?: string | null;
@@ -87,7 +87,7 @@ export async function sendVolunteerEmail({
 
   const htmlContent = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
-      <div style="background-color: #4f46e5; padding: 24px; text-align: center;">
+      <div style="background-color: #3b7d0b; padding: 24px; text-align: center;">
         <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">⛪ Service Assignment</h1>
       </div>
       <div style="padding: 24px; color: #1f2937; line-height: 1.5;">
@@ -102,7 +102,7 @@ export async function sendVolunteerEmail({
             </tr>
             <tr>
               <td style="padding: 6px 0; color: #6b7280; font-weight: 600;">Role:</td>
-              <td style="padding: 6px 0; font-weight: 700; color: #4f46e5;">${esc(roleName)}</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #3b7d0b;">${esc(roleName)}</td>
             </tr>
             <tr>
               <td style="padding: 6px 0; color: #6b7280; font-weight: 600;">Date:</td>
@@ -116,13 +116,13 @@ export async function sendVolunteerEmail({
         </div>
 
         <div style="text-align: center; margin-top: 28px; margin-bottom: 12px;">
-          <a href="${appPortalUrl}" style="background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block;">
+          <a href="${appPortalUrl}" style="background-color: #3b7d0b; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block;">
             Confirm or Decline Availability →
           </a>
         </div>
       </div>
       <div style="background-color: #f9fafb; padding: 16px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #f3f4f6;">
-        Sent via Church Scheduler • Open attachment to save to Apple, Google, or Outlook Calendar.
+        Sent via Christ Community Church’s Planner • Open attachment to save to Apple, Google, or Outlook Calendar.
       </div>
     </div>
   `;

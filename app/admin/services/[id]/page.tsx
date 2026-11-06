@@ -113,7 +113,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
               ))}
             </select>
           </div>
-          <button type="submit" className="bg-indigo-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-indigo-700">
+          <button type="submit" className="bg-brand-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-brand-700">
             Assign
           </button>
         </form>

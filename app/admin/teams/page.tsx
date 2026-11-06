@@ -57,7 +57,7 @@ export default async function AdminTeamsPage({
             <label className="block text-sm font-medium text-gray-700">Description</label>
             <textarea name="description" rows={2} className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm" />
           </div>
-          <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
+          <button type="submit" className="bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-brand-700">
             Add Ministry
           </button>
         </form>
@@ -80,7 +80,7 @@ export default async function AdminTeamsPage({
             <form action={addRole} className="mt-4 flex gap-2">
               <input type="hidden" name="teamId" value={team.id} />
               <input type="text" name="name" required placeholder="New role, e.g. Bass Guitar" className="flex-1 rounded-md border border-gray-300 p-2 text-sm shadow-sm" />
-              <button type="submit" className="bg-indigo-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 cursor-pointer">
+              <button type="submit" className="bg-brand-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-brand-700 cursor-pointer">
                 Add Role
               </button>
             </form>

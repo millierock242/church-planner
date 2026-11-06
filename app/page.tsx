@@ -27,9 +27,9 @@ export default async function HomePage({
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Church Planner Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Christ Community Church’s Planner</h1>
         <div className="space-x-4">
-          <Link href="/admin/services" className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
+          <Link href="/admin/services" className="bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-brand-700">
             Manage Services
           </Link>
           <Link href="/admin/roster" className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-200">
@@ -49,7 +49,7 @@ export default async function HomePage({
                   {new Date(event.eventDate).toLocaleDateString("en-US", { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
-              <Link href={`/admin/services/${event.id}`} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+              <Link href={`/admin/services/${event.id}`} className="text-brand-600 hover:text-brand-900 text-sm font-medium">
                 View Details →
               </Link>
             </div>
@@ -91,7 +91,7 @@ export default async function HomePage({
           </div>
           {/* Spam trap: hidden from people, bots fill it in */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
-          <button type="submit" className="bg-indigo-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-indigo-700 cursor-pointer">
+          <button type="submit" className="bg-brand-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-brand-700 cursor-pointer">
             Sign Me Up
           </button>
         </form>

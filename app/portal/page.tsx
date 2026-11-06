@@ -34,7 +34,7 @@ export default async function VolunteerPortalPage({
     <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-16 pt-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
+          <span className="text-xs font-semibold uppercase tracking-wider text-brand-600 bg-brand-50 px-2.5 py-1 rounded-full">
             Volunteer Portal
           </span>
           <h1 className="text-3xl font-extrabold text-gray-900 mt-2">My Schedule</h1>
@@ -54,7 +54,7 @@ export default async function VolunteerPortalPage({
           placeholder="Your full name, e.g. Jane Smith"
           className="flex-1 rounded-md border border-gray-300 p-2 shadow-sm"
         />
-        <button type="submit" className="bg-indigo-600 text-white py-2 px-5 rounded-md text-sm font-medium hover:bg-indigo-700 cursor-pointer">
+        <button type="submit" className="bg-brand-600 text-white py-2 px-5 rounded-md text-sm font-medium hover:bg-brand-700 cursor-pointer">
           Show My Schedule
         </button>
       </form>
@@ -71,7 +71,7 @@ export default async function VolunteerPortalPage({
             assignments.map((assignment) => (
               <div key={assignment.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md">
+                  <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2.5 py-1 rounded-md">
                     {assignment.role.team.name} • {assignment.role.name}
                   </span>
                   <h2 className="text-lg font-bold text-gray-900 mt-2">{assignment.event.title}</h2>

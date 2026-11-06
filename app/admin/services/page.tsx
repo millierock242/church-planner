@@ -21,7 +21,7 @@ export default async function AdminServicesPage() {
         <h1 className="text-2xl font-bold text-gray-900">Services & Rosters</h1>
         <Link
           href="/admin/services/new"
-          className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
+          className="bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-brand-700"
         >
           Schedule New Service
         </Link>
@@ -50,7 +50,7 @@ export default async function AdminServicesPage() {
                 </span>
                 <Link
                   href={`/admin/services/${event.id}`}
-                  className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                  className="text-brand-600 hover:text-brand-900 text-sm font-medium"
                 >
                   Manage Roster →
                 </Link>
