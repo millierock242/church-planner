@@ -57,7 +57,7 @@ export default async function Navbar() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <Link href="/portal" className={link}>Volunteer Portal</Link>
+          <Link href="/#signup" className={link}>Volunteer Sign-Up</Link>
           {access.isStaff ? (
             <form action={logoutAdmin}>
               <button type="submit" className="text-sm font-medium bg-gray-100 text-gray-800 px-3 py-1.5 rounded-md hover:bg-gray-200 cursor-pointer">

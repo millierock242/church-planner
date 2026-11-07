@@ -77,7 +77,7 @@ export async function updateMyAssignmentStatus(assignmentId: string, status: str
     });
     revalidatePath(`/admin/services/${assignment.eventId}`);
     revalidatePath("/admin/roster");
-    revalidatePath("/portal");
+    revalidatePath("/");
     return { success: true };
   } catch (error) {
     console.error("Failed to update status:", error);
@@ -464,7 +464,7 @@ export async function requestSwapByName(formData: FormData) {
   if (a && normalizeName(a.user.fullName) === normalizeName(name)) {
     await markSwap(assignmentId, a.userId, note);
   }
-  redirect(`/portal?name=${encodeURIComponent(name)}`);
+  redirect(`/?name=${encodeURIComponent(name)}#my-schedule`);
 }
 
 export async function addBlockoutByToken(formData: FormData) {

@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Christ Community Church’s Planner",
     short_name: "CCC Planner",
     description: "Volunteer and service scheduling for Christ Community Church",
-    start_url: "/portal",
+    start_url: "/",
     display: "standalone",
     background_color: "#f4fbe8",
     theme_color: "#3b7d0b",

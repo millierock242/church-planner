@@ -174,7 +174,7 @@ function detailsTable(eventTitle: string, roleName: string, eventDate: Date) {
 }
 
 function personalLink(accessToken?: string | null) {
-  return accessToken ? `${siteUrl()}/my/${accessToken}` : `${siteUrl()}/portal`;
+  return accessToken ? `${siteUrl()}/my/${accessToken}` : `${siteUrl()}/`;
 }
 
 // ---------------------------------------------------------------------------
