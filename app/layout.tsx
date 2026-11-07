@@ -16,9 +16,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-brand-50 text-gray-900 antialiased min-h-screen">
+      <body className="bg-brand-50 text-gray-900 antialiased min-h-screen flex flex-col">
         <Navbar />
-        {children}
+        <div className="flex-1">{children}</div>
+        <footer className="border-t border-brand-200 py-6 text-center text-xs text-gray-500 print:hidden">
+          © {new Date().getFullYear()} MCD. All rights reserved.
+        </footer>
       </body>
     </html>
   );
