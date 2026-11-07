@@ -1,6 +1,6 @@
 import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { createTeam, addRole, setLeaderPassword, toggleRoleRequired } from "@/app/actions";
+import { createTeam, addRole, renameRole, setLeaderPassword, toggleRoleRequired } from "@/app/actions";
 
 interface TeamWithRoles {
   id: string;
@@ -43,6 +43,9 @@ export default async function AdminTeamsPage({
       {leaderStatus === "short" && (
         <p className="mb-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm p-3">Leader passwords need at least 6 characters.</p>
       )}
+      {roleStatus === "renamed" && (
+        <p className="mb-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm p-3">Role renamed. Past assignments keep working under the new name.</p>
+      )}
       {roleStatus === "ok" && (
         <p className="mb-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm p-3">Role added.</p>
       )}
@@ -51,7 +54,7 @@ export default async function AdminTeamsPage({
       )}
       {(roleStatus === "missing" || roleStatus === "error") && (
         <p className="mb-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm p-3">
-          {roleStatus === "missing" ? "Please enter a role name." : "Couldn't add that role. Please try again."}
+          {roleStatus === "missing" ? "Please enter a role name." : "Couldn't save that role. Please try again."}
         </p>
       )}
 
@@ -88,7 +91,8 @@ export default async function AdminTeamsPage({
               <h4 className="text-sm font-semibold text-gray-700 mb-2">Roles:</h4>
               <ul className="text-sm text-gray-600 space-y-1">
                 {team.roles.map((role: { id: string; name: string; requiredByDefault: boolean }) => (
-                  <li key={role.id} className="flex items-center justify-between gap-2">
+                  <li key={role.id}>
+                    <div className="flex items-center justify-between gap-2">
                     <span>{role.name}</span>
                     <form action={toggleRoleRequired}>
                       <input type="hidden" name="roleId" value={role.id} />
@@ -104,6 +108,17 @@ export default async function AdminTeamsPage({
                         {role.requiredByDefault ? "✓ Needed every service" : "Optional"}
                       </button>
                     </form>
+                    </div>
+                    <details className="mt-1">
+                      <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">Rename</summary>
+                      <form action={renameRole} className="mt-1 flex gap-2">
+                        <input type="hidden" name="roleId" value={role.id} />
+                        <input type="text" name="name" required defaultValue={role.name} className="flex-1 rounded-md border border-gray-300 p-1.5 text-sm shadow-sm" />
+                        <button type="submit" className="bg-gray-800 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-gray-700 cursor-pointer">
+                          Save
+                        </button>
+                      </form>
+                    </details>
                   </li>
                 ))}
                 {team.roles.length === 0 && <li className="text-gray-400 italic">No roles added yet</li>}

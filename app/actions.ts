@@ -613,3 +613,35 @@ export async function toggleRoleRequired(formData: FormData) {
   revalidatePath("/admin/todo");
   redirect("/admin/teams");
 }
+
+export async function renameRole(formData: FormData) {
+  await requireAdmin();
+  const roleId = String(formData.get("roleId") ?? "");
+  const name = String(formData.get("name") ?? "").trim().replace(/\s+/g, " ").slice(0, 60);
+
+  if (!roleId || !name) redirect("/admin/teams?role=missing");
+
+  let outcome: "ok" | "exists" | "error" = "ok";
+  try {
+    const role = await prisma.teamRole.findUnique({ where: { id: roleId } });
+    if (!role) {
+      outcome = "error";
+    } else {
+      const siblings = await prisma.teamRole.findMany({ where: { teamId: role.teamId, id: { not: roleId } } });
+      if (siblings.some((r) => r.name.trim().toLowerCase() === name.toLowerCase())) {
+        outcome = "exists";
+      } else {
+        await prisma.teamRole.update({ where: { id: roleId }, data: { name } });
+      }
+    }
+  } catch (error) {
+    console.error("Failed to rename role:", error);
+    outcome = "error";
+  }
+
+  revalidatePath("/admin/teams");
+  revalidatePath("/admin/services");
+  revalidatePath("/admin/roster");
+  revalidatePath("/admin/todo");
+  redirect(`/admin/teams?role=${outcome === "ok" ? "renamed" : outcome}`);
+}
