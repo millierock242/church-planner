@@ -27,6 +27,7 @@ export default async function ServiceDetailPage({
     roleId?: string;
     copied?: string;
     skipped?: string;
+    role?: string;
   }>;
 }) {
   const { id } = await params;
@@ -49,12 +50,64 @@ export default async function ServiceDetailPage({
     orderBy: { fullName: "asc" },
     include: { memberships: true, qualifications: true },
   });
+  // --- Who is free for THIS service? Worked out up front so there is no guessing. ---
+  const dayStart = new Date(event.eventDate);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  const twoHours = 2 * 60 * 60 * 1000;
+  const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+
+  const [blockouts, nearby, recentRows] = await Promise.all([
+    prisma.blockoutDate.findMany({ where: { date: { gte: dayStart, lt: dayEnd } } }),
+    prisma.serviceAssignment.findMany({
+      where: {
+        eventId: { not: id },
+        status: { not: "declined" },
+        event: { eventDate: { gte: new Date(event.eventDate.getTime() - twoHours), lte: new Date(event.eventDate.getTime() + twoHours) } },
+      },
+      include: { event: true },
+    }),
+    prisma.serviceAssignment.findMany({
+      where: { status: { not: "declined" }, event: { eventDate: { gte: fourWeeksAgo, lt: new Date() } } },
+      select: { userId: true },
+    }),
+  ]);
+  const blockedBy = new Map(blockouts.map((b) => [b.userId, b.note]));
+  const hereAs = new Map<string, string[]>();
+  for (const a of event.assignments) {
+    if (a.status === "declined") continue;
+    hereAs.set(a.userId, [...(hereAs.get(a.userId) ?? []), a.role.name]);
+  }
+  const nearbyAt = new Map<string, string[]>();
+  for (const a of nearby) nearbyAt.set(a.userId, [...(nearbyAt.get(a.userId) ?? []), a.event.title]);
+  const recentCount = new Map<string, number>();
+  for (const r of recentRows) recentCount.set(r.userId, (recentCount.get(r.userId) ?? 0) + 1);
+
   const volunteers = volunteerRows.map((v) => ({
     id: v.id,
     name: v.fullName,
     teamIds: v.memberships.map((m) => m.teamId),
     roleIds: v.qualifications.map((q) => q.roleId),
     labels: (v.tags ?? "").split(",").map((t) => t.trim()).filter(Boolean),
+    ...(() => {
+      const reasons: string[] = [];
+      let availability: "free" | "check" | "blocked" = "free";
+      if (blockedBy.has(v.id)) {
+        const note = blockedBy.get(v.id);
+        reasons.push(`unavailable${note ? ` (${note})` : ""}`);
+        availability = "blocked";
+      }
+      if (hereAs.has(v.id)) {
+        reasons.push(`already here as ${hereAs.get(v.id)!.join(", ")}`);
+        if (availability === "free") availability = "check";
+      }
+      if (nearbyAt.has(v.id)) {
+        reasons.push(`also at "${nearbyAt.get(v.id)![0]}"`);
+        if (availability === "free") availability = "check";
+      }
+      return { availability, reasons, recent: recentCount.get(v.id) ?? 0 };
+    })(),
   }));
   const allRoles = await prisma.teamRole.findMany({ include: { team: true }, orderBy: { name: "asc" } });
   const roles = allRoles.filter((r) => canManageTeam(access, r.teamId));
@@ -69,8 +122,38 @@ export default async function ServiceDetailPage({
 
   const notice = sp.notice;
 
+  // --- The live roster shown beside the form, grouped by ministry. ---
+  type PanelItem =
+    | { kind: "person"; id: string; roleId: string; roleName: string; teamId: string; name: string; status: string; swapNote: string | null }
+    | { kind: "empty"; roleId: string; roleName: string; teamId: string };
+  const panel = new Map<string, { name: string; items: PanelItem[] }>();
+  const ensure = (teamId: string, name: string) => {
+    if (!panel.has(teamId)) panel.set(teamId, { name, items: [] });
+    return panel.get(teamId)!;
+  };
+  for (const a of event.assignments) {
+    ensure(a.role.teamId, a.role.team.name).items.push({
+      kind: "person",
+      id: a.id,
+      roleId: a.roleId,
+      roleName: a.role.name,
+      teamId: a.role.teamId,
+      name: a.user.fullName,
+      status: a.status,
+      swapNote: a.swapNote,
+    });
+  }
+  const unfilled = allRoles.filter(
+    (r) => r.requiredByDefault && !event.assignments.some((a) => a.roleId === r.id && a.status !== "declined")
+  );
+  for (const r of unfilled) ensure(r.teamId, r.team.name).items.push({ kind: "empty", roleId: r.id, roleName: r.name, teamId: r.teamId });
+  const panelTeams = Array.from(panel.values())
+    .map((t) => ({ ...t, items: t.items.sort((x, y) => x.roleName.localeCompare(y.roleName)) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const liveCount = event.assignments.filter((a) => a.status !== "declined").length;
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{event.title}</h1>
@@ -147,86 +230,127 @@ export default async function ServiceDetailPage({
         </div>
       )}
 
-      <div className="bg-white shadow rounded-lg p-6 mb-8">
-        <h2 className="text-lg font-semibold mb-4">Assign Volunteer</h2>
-        <AssignForm
-          action={createAssignment}
-          eventId={event.id}
-          volunteers={volunteers}
-          roles={roles.map((r) => ({ id: r.id, name: r.name, teamId: r.teamId, teamName: r.team.name }))}
-        />
-        <p className="text-xs text-gray-500 mt-3">
-          The app warns you if the person marked the day as unavailable or is already serving around that time.
-        </p>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+        {/* LEFT: assign someone */}
+        <div className="lg:col-span-3 space-y-6">
+          <div id="assign" className="bg-white shadow rounded-lg p-6 scroll-mt-4">
+            <h2 className="text-lg font-semibold mb-1">Assign a Volunteer</h2>
+            <p className="text-xs text-gray-500 mb-4">
+              Pick a role and the list sorts itself for {event.title}: who is free, who is already serving, and who is off.
+            </p>
+            <AssignForm
+              action={createAssignment}
+              eventId={event.id}
+              volunteers={volunteers}
+              roles={roles.map((r) => ({ id: r.id, name: r.name, teamId: r.teamId, teamName: r.team.name }))}
+              initialRoleId={sp.role ?? ""}
+            />
+          </div>
 
-      {otherEvents.length > 0 && (
-        <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-1">Copy a Previous Roster</h2>
-          <p className="text-xs text-gray-500 mb-4">
-            Brings over the same people in the same roles{access.isAdmin ? "" : " (your ministry only)"}. Anyone unavailable or already assigned is skipped.
-          </p>
-          <form action={copyRoster} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-            <input type="hidden" name="toEventId" value={event.id} />
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Copy from</label>
-              <select name="fromEventId" required className={field}>
-                <option value="">Select a service...</option>
-                {otherEvents.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.title} — {new Date(e.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button type="submit" className="bg-gray-800 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-700 cursor-pointer">
-              Copy Roster
-            </button>
-            <label className="sm:col-span-3 flex items-center gap-2 text-sm text-gray-700">
-              <input type="checkbox" name="notify" value="1" className="h-4 w-4 rounded border-gray-300" />
-              Also email everyone their invite
-            </label>
-          </form>
-        </div>
-      )}
-
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-4">Current Assignments</h2>
-        <div className="space-y-3">
-          {event.assignments.map((assignment) => (
-            <div key={assignment.id} className="flex justify-between items-center gap-3 border-b pb-3">
-              <div>
-                <p className="font-medium text-gray-900">{assignment.user.fullName}</p>
-                <p className="text-xs text-gray-500">{assignment.role.team.name} — {assignment.role.name}</p>
-                {assignment.status === "swap_requested" && (
-                  <p className="text-xs text-orange-700 mt-1">
-                    Asked for a replacement{assignment.swapNote ? `: “${assignment.swapNote}”` : ""}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-4">
-                <span className={`px-2 py-1 text-xs rounded-full font-semibold capitalize ${statusStyle[assignment.status] ?? statusStyle.pending}`}>
-                  {assignment.status.replace("_", " ")}
-                </span>
-                {canManageTeam(access, assignment.role.teamId) && (
-                  <form action={deleteAssignment}>
-                    <input type="hidden" name="id" value={assignment.id} />
-                    <input type="hidden" name="eventId" value={event.id} />
-                    <ConfirmButton
-                      message={`Remove ${assignment.user.fullName} from ${assignment.role.name}?`}
-                      className="text-red-600 hover:text-red-800 text-xs font-medium cursor-pointer"
-                    >
-                      Remove
-                    </ConfirmButton>
-                  </form>
-                )}
-              </div>
-            </div>
-          ))}
-          {event.assignments.length === 0 && (
-            <p className="text-sm text-gray-500">No volunteers assigned to this service yet.</p>
+          {otherEvents.length > 0 && (
+            <details className="bg-white shadow rounded-lg p-6">
+              <summary className="cursor-pointer text-lg font-semibold">Copy a Previous Roster</summary>
+              <p className="text-xs text-gray-500 mt-2 mb-4">
+                Brings over the same people in the same roles{access.isAdmin ? "" : " (your ministry only)"}. Anyone unavailable or already assigned is skipped.
+              </p>
+              <form action={copyRoster} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                <input type="hidden" name="toEventId" value={event.id} />
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">Copy from</label>
+                  <select name="fromEventId" required className={field}>
+                    <option value="">Select a service...</option>
+                    {otherEvents.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.title} — {new Date(e.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button type="submit" className="bg-gray-800 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-700 cursor-pointer">
+                  Copy Roster
+                </button>
+                <label className="sm:col-span-3 flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" name="notify" value="1" className="h-4 w-4 rounded border-gray-300" />
+                  Also email everyone their invite
+                </label>
+              </form>
+            </details>
           )}
         </div>
+
+        {/* RIGHT: who is on this service right now */}
+        <aside className="lg:col-span-2 lg:sticky lg:top-4">
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex items-baseline justify-between mb-1">
+              <h2 className="text-lg font-semibold">On this service</h2>
+              <span className="text-xs text-gray-500">{liveCount} {liveCount === 1 ? "person" : "people"}</span>
+            </div>
+            {unfilled.length > 0 && (
+              <p className="text-xs text-amber-700 mb-3">
+                {unfilled.length} needed {unfilled.length === 1 ? "role has" : "roles have"} nobody yet.
+              </p>
+            )}
+
+            {panelTeams.length === 0 && (
+              <p className="text-sm text-gray-500 mt-3">Nobody is assigned yet. Pick a role on the left to start.</p>
+            )}
+
+            <div className="space-y-5 mt-3">
+              {panelTeams.map((team) => (
+                <div key={team.name}>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-brand-700 mb-1">{team.name}</h3>
+                  <ul className="divide-y divide-gray-100">
+                    {team.items.map((item) =>
+                      item.kind === "empty" ? (
+                        <li key={`empty-${item.roleId}`} className="py-2 flex items-center justify-between gap-2 text-sm">
+                          <span className="text-gray-600">{item.roleName}</span>
+                          {canManageTeam(access, item.teamId) ? (
+                            <Link href={`/admin/services/${event.id}?role=${item.roleId}#assign`} className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full hover:bg-amber-100">
+                              Needs someone — fill
+                            </Link>
+                          ) : (
+                            <span className="text-xs font-semibold text-amber-700">Needs someone</span>
+                          )}
+                        </li>
+                      ) : (
+                        <li key={item.id} className="py-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className={`text-sm font-medium ${item.status === "declined" ? "text-gray-400 line-through" : "text-gray-900"}`}>{item.name}</p>
+                              <p className="text-xs text-gray-500">{item.roleName}</p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`px-2 py-0.5 text-xs rounded-full font-semibold capitalize ${statusStyle[item.status] ?? statusStyle.pending}`}>
+                                {item.status.replace("_", " ")}
+                              </span>
+                              {canManageTeam(access, item.teamId) && (
+                                <form action={deleteAssignment}>
+                                  <input type="hidden" name="id" value={item.id} />
+                                  <input type="hidden" name="eventId" value={event.id} />
+                                  <ConfirmButton
+                                    message={`Remove ${item.name} from ${item.roleName}?`}
+                                    className="text-red-600 hover:text-red-800 text-xs font-medium cursor-pointer"
+                                  >
+                                    Remove
+                                  </ConfirmButton>
+                                </form>
+                              )}
+                            </div>
+                          </div>
+                          {item.status === "swap_requested" && (
+                            <p className="text-xs text-orange-700 mt-1">
+                              Asked for a replacement{item.swapNote ? `: “${item.swapNote}”` : ""}
+                            </p>
+                          )}
+                        </li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );

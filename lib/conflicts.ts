@@ -29,7 +29,7 @@ export async function findConflicts(
   }
 
   const sameEvent = await prisma.serviceAssignment.findMany({
-    where: { userId, eventId: event.id },
+    where: { userId, eventId: event.id, status: { not: "declined" } },
     include: { role: true },
   });
   if (sameEvent.length > 0) {
@@ -45,7 +45,7 @@ export async function findConflicts(
   const from = new Date(event.eventDate.getTime() - 2 * 60 * 60 * 1000);
   const to = new Date(event.eventDate.getTime() + 2 * 60 * 60 * 1000);
   const nearby = await prisma.serviceAssignment.findMany({
-    where: { userId, eventId: { not: event.id }, event: { eventDate: { gte: from, lte: to } } },
+    where: { userId, eventId: { not: event.id }, status: { not: "declined" }, event: { eventDate: { gte: from, lte: to } } },
     include: { event: true },
   });
   for (const a of nearby) {

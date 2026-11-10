@@ -188,7 +188,7 @@ export async function createAssignment(formData: FormData) {
   } catch (emailError) {
     console.error("Assignment saved but email failed:", emailError);
   }
-  redirect(`${back}?notice=assigned`);
+  redirect(`${back}?notice=assigned&role=${roleId}#assign`);
 }
 
 // ---------- Edit & delete (admin only) ----------
